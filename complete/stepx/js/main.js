@@ -3,17 +3,19 @@ var configuration = {'iceServers': [{'url': 'stun:stun.l.google.com:19302'}]},
     roomURL = document.getElementById('url'),
     video = document.getElementsByTagName('video')[0],
     photo = document.getElementById('photo'),
-    canvas = photo.getContext("2d"),
+    canvas = photo.getContext('2d'),
+    trail = document.getElementById('trail'),
 	snapBtn = document.getElementById('snap'),
 	sendBtn = document.getElementById('send'),
+    snapAndSendBtn = document.getElementById('snapAndSend'),
 	canvasWidth, canvasHeight;
 
-hide(photo, snapBtn, sendBtn);
+//hide(photo, snapBtn, sendBtn);
 
 video.addEventListener('play', setCanvasDimensions);
 snapBtn.addEventListener('click', snapPhoto);
 sendBtn.addEventListener('click', sendPhoto);
-
+snapAndSendBtn.addEventListener('click', snapAndSend);
 
 var socket = io.connect();
 
@@ -152,10 +154,8 @@ function onDataChannelCreated(channel) {
         console.log('count:', count)
 
         if (count == buf.byteLength) {
-            img = canvas.createImageData(canvasWidth, canvasHeight);
-            img.data.set(buf);
-            canvas.putImageData(img, 0, 0);
-            show(photo);
+            // we're done: all data chunks have been received
+            renderPhoto(buf);
         }
     }
 }
@@ -185,6 +185,23 @@ function sendPhoto() {
     console.log('Sending a photo of', img.data.byteLength, 'bytes over RTC Data Channel');
     dataChannel.send(img.data.byteLength);
     dataChannel.send(img.data);
+}
+
+function snapAndSend() {
+    snapPhoto();
+    sendPhoto();
+}
+
+function renderPhoto(data) {
+    var photo = document.createElement('canvas');
+    photo.setAttribute('style', 'display: inline-block; margin: 1em; width: 200px; height: 150px; border: 1px solid #ccc;');
+    //trail.appendChild(photo);
+    trail.insertBefore(photo, trail.firstChild);
+
+    var canvas = photo.getContext('2d');
+    img = canvas.createImageData(300, 150);
+    img.data.set(data);
+    canvas.putImageData(img, 0, 0);
 }
 
 function setCanvasDimensions() {
