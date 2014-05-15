@@ -68,7 +68,7 @@ socket.on('message', function (message){
 
     if (message.type === 'offer') {
         console.log('Got offer. Sending answer to peer.');
-        peerConn.setRemoteDescription(new RTCSessionDescription(message), null, logError);
+        peerConn.setRemoteDescription(new RTCSessionDescription(message), function(){}, logError);
         peerConn.createAnswer(onLocalSessionCreated, logError);
 
     } else if (message.type === 'answer') {
@@ -195,7 +195,6 @@ function snapAndSend() {
 function renderPhoto(data) {
     var photo = document.createElement('canvas');
     photo.setAttribute('style', 'display: inline-block; margin: 1em; width: 200px; height: 150px; border: 1px solid #ccc;');
-    //trail.appendChild(photo);
     trail.insertBefore(photo, trail.firstChild);
 
     var canvas = photo.getContext('2d');
