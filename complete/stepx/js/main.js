@@ -1,4 +1,5 @@
 var configuration = {'iceServers': [{'url': 'stun:stun.l.google.com:19302'}]},
+// {"url":"stun:stun.services.mozilla.com"}
 
     roomURL = document.getElementById('url'),
     video = document.getElementsByTagName('video')[0],
@@ -32,7 +33,8 @@ if (!room) {
 }
 
 socket.on('ipaddr', function (ipaddr) {
-    roomURL.innerText = 'http://' + ipaddr + ':2013/#' + room;
+    console.log('My IP address is', ipaddr);
+    roomURL.innerHTML = 'http://' + ipaddr + ':2013/#' + room;
 });
 
 socket.on('created', function (room, clientId) {
@@ -73,7 +75,7 @@ socket.on('message', function (message){
 
     } else if (message.type === 'answer') {
         console.log('Got answer.');
-        peerConn.setRemoteDescription(new RTCSessionDescription(message));
+        peerConn.setRemoteDescription(new RTCSessionDescription(message), function(){}, logError);
 
     } else if (message.type === 'candidate') {
         peerConn.addIceCandidate(new RTCIceCandidate({candidate: message.candidate}));
@@ -104,15 +106,18 @@ function createPeerConnection(isInitiator, config) {
     };
 
     // let the "negotiationneeded" event trigger offer generation
-    peerConn.onnegotiationneeded = function () {
-        console.log('onNegotiationNeeded event');
-        peerConn.createOffer(onLocalSessionCreated, logError);
-    }
+    // peerConn.onnegotiationneeded = function () {
+    //     console.log('onNegotiationNeeded event');
+    //     peerConn.createOffer(onLocalSessionCreated, logError);
+    // }
 
     if (isInitiator) {
         console.log('Creating Data Channel');
         dataChannel = peerConn.createDataChannel("photos");
         onDataChannelCreated(dataChannel);
+
+        console.log('Creating an offer');
+        peerConn.createOffer(onLocalSessionCreated, logError);
     } else {
         peerConn.ondatachannel = function (event) {
             console.log('ondatachannel:', event.channel);
@@ -131,10 +136,10 @@ function onLocalSessionCreated(desc) {
 }
 
 function onDataChannelCreated(channel) {
-    console.log('Created Data channel!', channel);
+    console.log('onDataChannelCreated:', channel);
 
     channel.onopen = function () {
-        console.log('CHANNEL onopen');
+        console.log('CHANNEL opened!!!');
     };
 
     var buf, count;
@@ -237,5 +242,5 @@ function randomToken() {
 }
 
 function logError(err) {
-    console.log(err.toString());
+    console.log(err.toString(), err);
 }
