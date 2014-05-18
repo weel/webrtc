@@ -142,30 +142,72 @@ function onDataChannelCreated(channel) {
         console.log('CHANNEL opened!!!');
     };
 
+    channel.onmessage = (webrtcDetectedBrowser == 'firefox') ? 
+        receiveDataFirefoxFactory() :
+        receiveDataChromeFactory();
+}
+
+function receiveDataChromeFactory() {
     var buf, count;
 
-    channel.onmessage = function (event) {
-        console.log('got data from CHANNEL');
-
+    return function onmessage(event) {
         if (typeof event.data === 'string') {
             buf = window.buf = new Uint8ClampedArray(parseInt(event.data));
             count = 0;
-            console.log('Expecting a total of', buf.byteLength, 'bytes');
+            console.log('Expecting a total of ' + buf.byteLength + ' bytes');
             return;
         }
-        buf.set(new Uint8ClampedArray(event.data), count);
 
-        count += event.data.byteLength;
-        console.log('count:', count)
+        var data = new Uint8ClampedArray(event.data);
+        buf.set(data, count);
+
+        count += data.byteLength;
+        console.log('count: ' + count);
 
         if (count == buf.byteLength) {
             // we're done: all data chunks have been received
+            console.log('Done. Rendering photo.');
             renderPhoto(buf);
         }
     }
 }
 
+function receiveDataFirefoxFactory() {
+    var count, total, parts;
 
+    return function onmessage(event) {
+        if (typeof event.data === 'string') {
+            total = parseInt(event.data);
+            parts = [];
+            count = 0;
+            console.log('Expecting a total of ' + total + ' bytes');
+            return;
+        }
+
+        parts.push(event.data);
+        count += event.data.size;
+        console.log('Got ' + event.data.size + ' byte(s), ' + (total - count) + ' to go.');
+
+        if (count == total) {
+            console.log('Assembling payload')
+            var buf = new Uint8ClampedArray(total);
+            var compose = function(i, pos) {
+                var reader = new FileReader();
+                reader.onload = function() { 
+                    buf.set(new Uint8ClampedArray(this.result), pos);
+                    if (i + 1 == parts.length) {
+                        console.log('Done. Rendering photo.');
+                        renderPhoto(buf);
+                    } else {
+                        compose(i + 1, pos + this.result.byteLength);
+                    }
+                };
+                reader.readAsArrayBuffer(parts[i]);
+            }
+            compose(0, 0);
+        }
+    }
+}
 
 function getMediaSuccessCallback(stream) {
 	var streamURL = window.URL.createObjectURL(stream);
@@ -186,10 +228,29 @@ function snapPhoto() {
 }
 
 function sendPhoto() {
-    var img = canvas.getImageData(0, 0, canvasWidth, canvasHeight);
-    console.log('Sending a photo of', img.data.byteLength, 'bytes over RTC Data Channel');
-    dataChannel.send(img.data.byteLength);
-    dataChannel.send(img.data);
+    // Data channel single message supports up to 64KB
+    var CHUNK_LEN = 64000;
+
+    var img = canvas.getImageData(0, 0, canvasWidth, canvasHeight),
+        len = img.data.byteLength,
+        n = len / CHUNK_LEN | 0;
+
+    console.log('Sending a total of ' + len + ' byte(s)');
+    dataChannel.send(len);
+
+    // split the photo and send in chunks of about 64KB
+    for (var i = 0; i < n; i++) {
+        var start = i * CHUNK_LEN,
+            end = (i+1) * CHUNK_LEN;
+        console.log(start + ' - ' + (end-1));
+        dataChannel.send(img.data.subarray(start, end));
+    }
+
+    // send the reminder, if any
+    if (len % CHUNK_LEN) {
+        console.log('last ' + len % CHUNK_LEN + 'byte(s)');
+        dataChannel.send(img.data.subarray(n * CHUNK_LEN));
+    }
 }
 
 function snapAndSend() {
