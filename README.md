@@ -394,19 +394,23 @@ The core part of this step is the following:
           var data = new Uint8ClampedArray(event.data);
           buf.set(data, count);
           count += data.byteLength;
-          if (count == buf.byteLength) {
+          if (count === buf.byteLength) {
               // we're done: all data chunks have been received
               renderPhoto(buf);
           }
         }
 
         function renderPhoto(data) {
-            var photo = document.createElement('canvas');
-            trail.insertBefore(photo, trail.firstChild);
-            var canvas = photo.getContext('2d');
-            var img = canvas.createImageData(300, 150);
+            var IMAGE_WIDTH = 300;
+            var IMAGE_HEIGHT = 150;
+
+            var canvas = document.createElement('canvas');
+            trail.insertBefore(canvas, trail.firstChild);
+
+            var context = canvas.getContext('2d');
+            var img = context.createImageData(IMAGE_WIDTH, IMAGE_HEIGHT);
             img.data.set(data);
-            canvas.putImageData(img, 0, 0);
+            context.putImageData(img, 0, 0);
         }
 
 

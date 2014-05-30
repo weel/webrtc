@@ -8,12 +8,14 @@ var configuration = {'iceServers': [{'url': 'stun:stun.l.google.com:19302'}]},
     roomURL = document.getElementById('url'),
     video = document.getElementsByTagName('video')[0],
     photo = document.getElementById('photo'),
-    canvas = photo.getContext('2d'),
+    photoContext = photo.getContext('2d'),
     trail = document.getElementById('trail'),
     snapBtn = document.getElementById('snap'),
     sendBtn = document.getElementById('send'),
     snapAndSendBtn = document.getElementById('snapAndSend'),
-    canvasWidth, canvasHeight;
+    // Default values for width and height of the photoContext.
+    // Maybe redefined later based on user's webcam video stream.
+    photoContextW = 300, photoContextH = 150;
 
 // Attach even handlers
 video.addEventListener('play', setCanvasDimensions);
@@ -211,7 +213,7 @@ function receiveDataChromeFactory() {
         count += data.byteLength;
         console.log('count: ' + count);
 
-        if (count == buf.byteLength) {
+        if (count === buf.byteLength) {
             // we're done: all data chunks have been received
             console.log('Done. Rendering photo.');
             renderPhoto(buf);
@@ -262,7 +264,7 @@ function receiveDataFirefoxFactory() {
  ****************************************************************************/
 
 function snapPhoto() {
-    canvas.drawImage(video, 0, 0, canvasWidth, canvasHeight);
+    photoContext.drawImage(video, 0, 0, photoContextW, photoContextH);
     show(photo, sendBtn);
 }
 
@@ -270,7 +272,7 @@ function sendPhoto() {
     // Split data channel message in chunks of this byte length.
     var CHUNK_LEN = 64000;
 
-    var img = canvas.getImageData(0, 0, canvasWidth, canvasHeight),
+    var img = photoContext.getImageData(0, 0, photoContextW, photoContextH),
         len = img.data.byteLength,
         n = len / CHUNK_LEN | 0;
 
@@ -298,14 +300,14 @@ function snapAndSend() {
 }
 
 function renderPhoto(data) {
-    var photo = document.createElement('canvas');
-    photo.classList.add('photo');
-    trail.insertBefore(photo, trail.firstChild);
+    var canvas = document.createElement('canvas');
+    canvas.classList.add('photo');
+    trail.insertBefore(canvas, trail.firstChild);
 
-    var canvas = photo.getContext('2d');
-    img = canvas.createImageData(300, 150);
+    var context = canvas.getContext('2d');
+    var img = context.createImageData(photoContextW, photoContextH);
     img.data.set(data);
-    canvas.putImageData(img, 0, 0);
+    context.putImageData(img, 0, 0);
 }
 
 function setCanvasDimensions() {
@@ -316,13 +318,13 @@ function setCanvasDimensions() {
     
     console.log('video width:', video.videoWidth, 'height:', video.videoHeight)
 
-    canvasWidth = video.videoWidth / 2;
-    canvasHeight = video.videoHeight / 2;
-    //photo.style.width = canvasWidth + 'px';
-    //photo.style.height = canvasHeight + 'px';
+    photoContextW = video.videoWidth / 2;
+    photoContextH = video.videoHeight / 2;
+    //photo.style.width = photoContextW + 'px';
+    //photo.style.height = photoContextH + 'px';
     // TODO: figure out right dimensions
-    canvasWidth = 300; //300;
-    canvasHeight = 150; //150;
+    photoContextW = 300; //300;
+    photoContextH = 150; //150;
 }
 
 function show() {
