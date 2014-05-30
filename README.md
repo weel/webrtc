@@ -334,29 +334,35 @@ In this step, we build a video chat client, using the signaling server we create
 
 Complete example: [complete/stepX](https://bitbucket.org/webrtc/codelab/src/4dc79328c01d890e7b2476721c42fbd6a31f15bf/complete/stepx/?at=step-x).
 
-In the previous step peers could exchange messages using RTCDataChannel. This step is an enhanced version which allows peers to share entire files.
+In the previous step peers could exchange messages using RTCDataChannel. 
+This step is an enhanced version which allows peers to share entire files.
 
-To make things more interesting and funny, peers would share photos as a specific file type instead of just any regular file. The photo is taken right from the webcam video stream (see Step 2).
+To make things more interesting and funny, peers would share photos as 
+a specific file type instead of just any regular file. The photo is taken 
+right from the webcam video stream (see Step 2).
 
 The core part of this step is the following:
 
-* Establish a data channel. 
-  Note that we don't add any media streams to the peer connection in this step, only data channel.
-* Grab user's webcam video stream using standard `getUserMedia()` method:
+1. Establish a peer connection and create a data channel.
+   Note that we don't add any media streams to the peer connection in this step, 
+   only data channel.
+
+2. Grab user's webcam video stream using standard `getUserMedia()` method:
 
         var video = document.getElementById('video');
         getUserMedia({video: true}, function(stream) {
             video.src = window.URL.createObjectURL(stream);
         }, getMediaErrorCallback);
 
-* When user clicks on "Snap" button, take a snapshot (a video frame) from the video stream and display it to the user:
-
+3. When user clicks on "Snap" button, take a snapshot (a video frame) from 
+   the video stream and display it to the user:
 
         var photo = document.getElementById('photo');
         var canvas = photo.getContext('2d');
         canvas.drawImage(video, 0, 0, canvasWidth, canvasHeight);
 
-* When they click on "Send" button, convert the photo frame to bytes and send it over data channel.
+4. When they click on "Send" button, convert the photo frame to bytes and send it 
+   over data channel.
 
         // Split data channel message in chunks of this byte length
         var CHUNK_LEN = 64000;
@@ -380,7 +386,8 @@ The core part of this step is the following:
             dataChannel.send(img.data.subarray(n * CHUNK_LEN));
         }
 
-* The receiving side converts data channel message bytes back to a photo frame and displays it to the user.
+5. The receiving side converts data channel message bytes back to a photo frame 
+   and displays it to the user.
 
         var buf, count;
         // dc is a RTCDataChannel initialized somewhere else
