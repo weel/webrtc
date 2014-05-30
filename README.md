@@ -344,70 +344,70 @@ The core part of this step is the following:
   Note that we don't add any media streams to the peer connection in this step, only data channel.
 * Grab user's webcam video stream using standard `getUserMedia()` method:
 
-    var video = document.getElementById('video');
-    getUserMedia({video: true}, function(stream) {
-      video.src = window.URL.createObjectURL(stream);
-    }, getMediaErrorCallback);
+        var video = document.getElementById('video');
+        getUserMedia({video: true}, function(stream) {
+            video.src = window.URL.createObjectURL(stream);
+        }, getMediaErrorCallback);
 
 * When user clicks on "Snap" button, take a snapshot (a video frame) from the video stream and display it to the user:
 
 
-    var photo = document.getElementById('photo');
-    var canvas = photo.getContext('2d');
-    canvas.drawImage(video, 0, 0, canvasWidth, canvasHeight);
+        var photo = document.getElementById('photo');
+        var canvas = photo.getContext('2d');
+        canvas.drawImage(video, 0, 0, canvasWidth, canvasHeight);
 
 * When they click on "Send" button, convert the photo frame to bytes and send it over data channel.
 
-    // Split data channel message in chunks of this byte length
-    var CHUNK_LEN = 64000;
-    // Get the image bytes and calculate the number of chunks
-    var img = canvas.getImageData(0, 0, canvasWidth, canvasHeight);
-    var len = img.data.byteLength;
-    var numChunks = len / CHUNK_LEN | 0;
+        // Split data channel message in chunks of this byte length
+        var CHUNK_LEN = 64000;
+        // Get the image bytes and calculate the number of chunks
+        var img = canvas.getImageData(0, 0, canvasWidth, canvasHeight);
+        var len = img.data.byteLength;
+        var numChunks = len / CHUNK_LEN | 0;
 
-    // Let the other peer know in advance how many bytes to expect in total
-    dataChannel.send(len);
+        // Let the other peer know in advance how many bytes to expect in total
+        dataChannel.send(len);
 
-    // Split the photo in chunks and send it over the data channel
-    for (var i = 0; i < n; i++) {
-      var start = i * CHUNK_LEN;
-      var end = (i+1) * CHUNK_LEN;
-      dataChannel.send(img.data.subarray(start, end));
-    }
+        // Split the photo in chunks and send it over the data channel
+        for (var i = 0; i < n; i++) {
+            var start = i * CHUNK_LEN;
+            var end = (i+1) * CHUNK_LEN;
+            dataChannel.send(img.data.subarray(start, end));
+        }
 
-    // Send the reminder, if any
-    if (len % CHUNK_LEN) {
-      dataChannel.send(img.data.subarray(n * CHUNK_LEN));
-    }
+        // Send the reminder, if any
+        if (len % CHUNK_LEN) {
+            dataChannel.send(img.data.subarray(n * CHUNK_LEN));
+        }
 
 * The receiving side converts data channel message bytes back to a photo frame and displays it to the user.
 
-    var buf, count;
-    // dc is a RTCDataChannel initialized somewhere else
-    dc.onmessage = function(event) {
-      if (typeof event.data === 'string') {
-              buf = new Uint8ClampedArray(parseInt(event.data));
-        count = 0;
-        console.log('Expecting a total of ' + buf.byteLength + ' bytes');
-        return;
-      }     
-      var data = new Uint8ClampedArray(event.data);
-      buf.set(data, count);
-      count += data.byteLength;
-      if (count == buf.byteLength) {
-        // we're done: all data chunks have been received
-        renderPhoto(buf);
+      var buf, count;
+      // dc is a RTCDataChannel initialized somewhere else
+      dc.onmessage = function(event) {
+        if (typeof event.data === 'string') {
+            buf = new Uint8ClampedArray(parseInt(event.data));
+            count = 0;
+            console.log('Expecting a total of ' + buf.byteLength + ' bytes');
+            return;
+        }
+        var data = new Uint8ClampedArray(event.data);
+        buf.set(data, count);
+        count += data.byteLength;
+        if (count == buf.byteLength) {
+            // we're done: all data chunks have been received
+            renderPhoto(buf);
+        }
       }
-    }
 
-    function renderPhoto(data) {
-      var photo = document.createElement('canvas');
-      trail.insertBefore(photo, trail.firstChild);
-      var canvas = photo.getContext('2d');
-      var img = canvas.createImageData(300, 150);
-      img.data.set(data);
-      canvas.putImageData(img, 0, 0);
-    }
+      function renderPhoto(data) {
+          var photo = document.createElement('canvas');
+          trail.insertBefore(photo, trail.firstChild);
+          var canvas = photo.getContext('2d');
+          var img = canvas.createImageData(300, 150);
+          img.data.set(data);
+          canvas.putImageData(img, 0, 0);
+      }
 
 ### Playing with the sample code
 
