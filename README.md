@@ -382,32 +382,33 @@ The core part of this step is the following:
 
 * The receiving side converts data channel message bytes back to a photo frame and displays it to the user.
 
-      var buf, count;
-      // dc is a RTCDataChannel initialized somewhere else
-      dc.onmessage = function(event) {
-        if (typeof event.data === 'string') {
-            buf = new Uint8ClampedArray(parseInt(event.data));
-            count = 0;
-            console.log('Expecting a total of ' + buf.byteLength + ' bytes');
-            return;
+        var buf, count;
+        // dc is a RTCDataChannel initialized somewhere else
+        dc.onmessage = function(event) {
+          if (typeof event.data === 'string') {
+              buf = new Uint8ClampedArray(parseInt(event.data));
+              count = 0;
+              console.log('Expecting a total of ' + buf.byteLength + ' bytes');
+              return;
+          }
+          var data = new Uint8ClampedArray(event.data);
+          buf.set(data, count);
+          count += data.byteLength;
+          if (count == buf.byteLength) {
+              // we're done: all data chunks have been received
+              renderPhoto(buf);
+          }
         }
-        var data = new Uint8ClampedArray(event.data);
-        buf.set(data, count);
-        count += data.byteLength;
-        if (count == buf.byteLength) {
-            // we're done: all data chunks have been received
-            renderPhoto(buf);
-        }
-      }
 
-      function renderPhoto(data) {
-          var photo = document.createElement('canvas');
-          trail.insertBefore(photo, trail.firstChild);
-          var canvas = photo.getContext('2d');
-          var img = canvas.createImageData(300, 150);
-          img.data.set(data);
-          canvas.putImageData(img, 0, 0);
-      }
+        function renderPhoto(data) {
+            var photo = document.createElement('canvas');
+            trail.insertBefore(photo, trail.firstChild);
+            var canvas = photo.getContext('2d');
+            var img = canvas.createImageData(300, 150);
+            img.data.set(data);
+            canvas.putImageData(img, 0, 0);
+        }
+
 
 ### Playing with the sample code
 
