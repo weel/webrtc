@@ -329,6 +329,101 @@ In this step, we build a video chat client, using the signaling server we create
 
 5. How would users share the room name? Try to build an alternative to sharing room names.
 
+
+## Step X: File sharing using RTCDataChannel
+
+Complete example: [complete/stepX](https://bitbucket.org/webrtc/codelab/src/4dc79328c01d890e7b2476721c42fbd6a31f15bf/complete/stepx/?at=step-x).
+
+In the previous step peers could exchange messages using RTCDataChannel. This step is an enhanced version which allows peers to share entire files.
+
+To make things more interesting and funny, peers would share photos as a specific file type instead of just any regular file. The photo is taken right from the webcam video stream (see Step 2).
+
+The core part of this step is the following:
+
+* Establish a data channel. 
+  Note that we don't add any media streams to the peer connection in this step, only data channel.
+* Grab user's webcam video stream using standard `getUserMedia()` method:
+
+    var video = document.getElementById('video');
+    getUserMedia({video: true}, function(stream) {
+      video.src = window.URL.createObjectURL(stream);
+    }, getMediaErrorCallback);
+
+* When user clicks on "Snap" button, take a snapshot (a video frame) from the video stream and display it to the user:
+
+
+    var photo = document.getElementById('photo');
+    var canvas = photo.getContext('2d');
+    canvas.drawImage(video, 0, 0, canvasWidth, canvasHeight);
+
+* When they click on "Send" button, convert the photo frame to bytes and send it over data channel.
+
+    // Split data channel message in chunks of this byte length
+    var CHUNK_LEN = 64000;
+    // Get the image bytes and calculate the number of chunks
+    var img = canvas.getImageData(0, 0, canvasWidth, canvasHeight);
+    var len = img.data.byteLength;
+    var numChunks = len / CHUNK_LEN | 0;
+
+    // Let the other peer know in advance how many bytes to expect in total
+    dataChannel.send(len);
+
+    // Split the photo in chunks and send it over the data channel
+    for (var i = 0; i < n; i++) {
+      var start = i * CHUNK_LEN;
+      var end = (i+1) * CHUNK_LEN;
+      dataChannel.send(img.data.subarray(start, end));
+    }
+
+    // Send the reminder, if any
+    if (len % CHUNK_LEN) {
+      dataChannel.send(img.data.subarray(n * CHUNK_LEN));
+    }
+
+* The receiving side converts data channel message bytes back to a photo frame and displays it to the user.
+
+    var buf, count;
+    // dc is a RTCDataChannel initialized somewhere else
+    dc.onmessage = function(event) {
+      if (typeof event.data === 'string') {
+              buf = new Uint8ClampedArray(parseInt(event.data));
+        count = 0;
+        console.log('Expecting a total of ' + buf.byteLength + ' bytes');
+        return;
+      }     
+      var data = new Uint8ClampedArray(event.data);
+      buf.set(data, count);
+      count += data.byteLength;
+      if (count == buf.byteLength) {
+        // we're done: all data chunks have been received
+        renderPhoto(buf);
+      }
+    }
+
+    function renderPhoto(data) {
+      var photo = document.createElement('canvas');
+      trail.insertBefore(photo, trail.firstChild);
+      var canvas = photo.getContext('2d');
+      var img = canvas.createImageData(300, 150);
+      img.data.set(data);
+      canvas.putImageData(img, 0, 0);
+    }
+
+### Playing with the sample code
+
+1. As usual, start local server with `node server.js` and navigate to http://localhost:2013.
+2. Allow the app to grab webcam video stream.
+3. The app will create a random room. Copy and paste the URL into a new window.
+4. Click on "Snap & send" button and see what happens in the other window.
+
+### Bonus points
+
+1. Try combinations of different browsers, e.g. Firefox or Opera.
+2. Send the room URL to another person in your codelab. You should be able to connect over the WiFi. 
+3. Deploy the app to a public URL and try snap&sending photos with your friends.
+4. How can you change the code to be able to share any regular file with your peers?
+
+
 ## Step 7: Putting it all together: RTCPeerConnection + RTCDataChannel + signaling
 
 This is a DIY step!
