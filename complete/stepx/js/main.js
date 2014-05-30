@@ -46,11 +46,19 @@ socket.on('ipaddr', function (ipaddr) {
 socket.on('created', function (room, clientId) {
   console.log('Created room', room, '- my client ID is', clientId);
   isInitiator = true;
+  grabWebCamVideo();
 });
 
 socket.on('joined', function (room, clientId) {
   console.log('This peer has joined room', room, 'with client ID', clientId);
   isInitiator = false;
+  grabWebCamVideo();
+});
+
+socket.on('full', function (room) {
+    alert('Room "' + room + '" is full. We will create a new room for you.');
+    window.location.hash = '';
+    window.location.reload();
 });
 
 socket.on('ready', function () {
@@ -99,8 +107,10 @@ function updateRoomURL(ipaddr) {
  * User media (webcam) 
  ****************************************************************************/
 
-console.log('Getting user media (video) ...');
-getUserMedia({video: true}, getMediaSuccessCallback, getMediaErrorCallback);
+function grabWebCamVideo() {
+    console.log('Getting user media (video) ...');
+    getUserMedia({video: true}, getMediaSuccessCallback, getMediaErrorCallback);
+}
 
 function getMediaSuccessCallback(stream) {
     var streamURL = window.URL.createObjectURL(stream);
