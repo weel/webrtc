@@ -53,7 +53,7 @@ Complete example: [complete/step1](https://bitbucket.org/webrtc/codelab/src/mast
 1. Create a bare-bones HTML document.
 1. Test it out [locally](http://localhost:2013) (see instructions above on running demos).
     - Why is there nothing on the screen?
-  
+
 
 ## Step 2: Get video from your webcam
 
@@ -330,67 +330,56 @@ In this step, we build a video chat client, using the signaling server we create
 5. How would users share the room name? Try to build an alternative to sharing room names.
 
 
-## Step X: File sharing using RTCDataChannel
+## Step 7: File sharing using RTCDataChannel
 
-Complete example: [complete/stepX](https://bitbucket.org/webrtc/codelab/src/4dc79328c01d890e7b2476721c42fbd6a31f15bf/complete/stepx/?at=step-x).
+Complete example: [complete/step7](https://bitbucket.org/webrtc/codelab/src/4dc79328c01d890e7b2476721c42fbd6a31f15bf/complete/stepx/?at=step-x).
 
-In the previous step peers could exchange messages using RTCDataChannel. 
-This step is an enhanced version which allows peers to share entire files.
+Step 5 showed how to exchange text messages using RTCDataChannel.
 
-To make things more interesting and funny, peers would share photos as 
-a specific file type instead of just any regular file. The photo is taken 
-right from the webcam video stream (see Step 2).
+This step makes it possible to share entire files: in this example, photos captured via `getUserMedia()`.
 
-The core part of this step is the following:
+The core parts of this step are as follows:
 
-1. Establish a peer connection and create a data channel.
-   Note that we don't add any media streams to the peer connection in this step, 
-   only data channel.
+1. Establish a data channel.  Note that we don't add any media streams to the peer connection in this step.
 
-2. Grab user's webcam video stream using standard `getUserMedia()` method:
+2. Grab the user's webcam video stream with `getUserMedia()`:
 
         var video = document.getElementById('video');
         getUserMedia({video: true}, function(stream) {
             video.src = window.URL.createObjectURL(stream);
         }, getMediaErrorCallback);
 
-3. When user clicks on "Snap" button, take a snapshot (a video frame) from 
-   the video stream and display it to the user:
+3. When the user clicks on the **Snap** button, get a snapshot (a video frame) from the video stream and display it:
 
-        var photo = document.getElementById('photo');
-        var canvas = photo.getContext('2d');
-        canvas.drawImage(video, 0, 0, canvasWidth, canvasHeight);
+        var canvas = document.querySelector('canvas);
+        var context = photo.getContext('2d');
+        context.drawImage(video, 0, 0, canvasWidth, canvasHeight);
 
-4. When they click on "Send" button, convert the photo frame to bytes and send it 
-   over data channel.
+4. When the user clicks on the **Send** button, convert the image to bytes and send them over a data channel:
 
-        // Split data channel message in chunks of this byte length
+        // Split data channel message in chunks
         var CHUNK_LEN = 64000;
         // Get the image bytes and calculate the number of chunks
         var img = canvas.getImageData(0, 0, canvasWidth, canvasHeight);
         var len = img.data.byteLength;
         var numChunks = len / CHUNK_LEN | 0;
-
         // Let the other peer know in advance how many bytes to expect in total
         dataChannel.send(len);
-
         // Split the photo in chunks and send it over the data channel
         for (var i = 0; i < n; i++) {
             var start = i * CHUNK_LEN;
             var end = (i+1) * CHUNK_LEN;
             dataChannel.send(img.data.subarray(start, end));
         }
-
         // Send the reminder, if any
         if (len % CHUNK_LEN) {
             dataChannel.send(img.data.subarray(n * CHUNK_LEN));
         }
 
-5. The receiving side converts data channel message bytes back to a photo frame 
-   and displays it to the user.
+5. The receiving side converts data channel message bytes back to an image and displays this to the user:
 
         var buf, count;
-        // dc is a RTCDataChannel initialized somewhere else
+        // dc is an RTCDataChannel initialized somewhere else
         dc.onmessage = function(event) {
           if (typeof event.data === 'string') {
               buf = new Uint8ClampedArray(parseInt(event.data));
@@ -401,62 +390,41 @@ The core part of this step is the following:
           var data = new Uint8ClampedArray(event.data);
           buf.set(data, count);
           count += data.byteLength;
-          if (count === buf.byteLength) {
+          if (count == buf.byteLength) {
               // we're done: all data chunks have been received
               renderPhoto(buf);
           }
         }
-
         function renderPhoto(data) {
-            var IMAGE_WIDTH = 300;
-            var IMAGE_HEIGHT = 150;
-
-            var canvas = document.createElement('canvas');
-            trail.insertBefore(canvas, trail.firstChild);
-
-            var context = canvas.getContext('2d');
-            var img = context.createImageData(IMAGE_WIDTH, IMAGE_HEIGHT);
+            var photo = document.createElement('canvas');
+            trail.insertBefore(photo, trail.firstChild);
+            var canvas = photo.getContext('2d');
+            var img = canvas.createImageData(300, 150);
             img.data.set(data);
-            context.putImageData(img, 0, 0);
+            canvas.putImageData(img, 0, 0);
         }
 
 
 ### Playing with the sample code
 
-1. As usual, start local server with `node server.js` and navigate to http://localhost:2013.
-2. Allow the app to grab webcam video stream.
+1. As in previous steps, start a local server with `node server.js` and navigate to http://localhost:2013.
+2. Allow the app to use your camera.
 3. The app will create a random room. Copy and paste the URL into a new window.
-4. Click on "Snap & send" button and see what happens in the other window.
+4. Click the 'Snap & send' button and see what happens in the other window.
 
 ### Bonus points
 
 1. Try combinations of different browsers, e.g. Firefox or Opera.
-2. Send the room URL to another person in your codelab. You should be able to connect over the WiFi. 
-3. Deploy the app to a public URL and try snap&sending photos with your friends.
-4. How can you change the code to be able to share any regular file with your peers?
-
-
-## Step 7: Putting it all together: RTCPeerConnection + RTCDataChannel + signaling
-
-This is a DIY step!
-
-1. Take a look at the app you built in step 4.
-
-2. Add the RTCDataChannel code to your Step 6 app to create a complete application.
-
-
-### Bonus points
-
-1. The app hasn't had any work done on layout. Sort it out! Make sure your app works well on different devices.
-
-
+2. Send the room URL to another person in your codelab. You should be able to connect via WiFi.
+3. Deploy the app to a public URL and try 'snap & sending' photos with your friends.
+4. How can you change the code to make it possible to share any file type with your peers?
 
 
 ## Step 8: Use a WebRTC library: SimpleWebRTC
 
 Complete example: [complete/step8](https://bitbucket.org/webrtc/codelab/src/master/complete/step8).
 
-Abstraction libraries such as SimpleWebRTC make it simple to create WebRTC applications.
+Abstraction libraries such as SimpleWebRTC make it simple to create WebRTC applications. (You can find other examples of WebRTC libraries at [bit.ly/webrtcwebaudio](http://bit.ly/webrtcwebaudio).)
 
 1. Create a new document using the code from [complete/step8/index.html](https://bitbucket.org/webrtc/codelab/src/master/complete/step8/index.html).
 2. Open the document in multiple windows or tab.
@@ -465,3 +433,21 @@ Abstraction libraries such as SimpleWebRTC make it simple to create WebRTC appli
 
 1. Find a WebRTC library for RTCDataChannel. (Hint: there's one named PeerJS!)
 2. Set up your own signaling server using the SimpleWebRTC server [signalmaster](https://github.com/andyet/signalmaster).
+
+## Step 9: Support three or more users in the same room
+
+This is a DIY step!
+
+How would you implement an app combining video chat and file exchange for three or more users?
+
+How many users can an app sustain in full mesh mode, i.e. with a peer connection between every user?
+
+What are the alternatives? (Take a look at the HTML5 Rocks [WebRTC infrastructure article](http://www.html5rocks.com/en/tutorials/webrtc/infrastructure/#beyond-one-to-one-multi-party-webrtc) for inspiration.)
+
+
+### Bonus points
+
+1. So far, the app hasn't had any work done on layout. Sort it out! Make sure your app works well across different devices.
+
+
+
