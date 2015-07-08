@@ -101,23 +101,6 @@ If successful, the video stream from the webcam is set as the source of the vide
       video.play();
     }
 
-### Bonus points
-
-1. Inspect the stream object from the console.
-2. Try calling `stream.stop()`.
-3. What does `stream.getVideoTracks()` return?
-4. Look at the constraints object: what happens when you change it to `{audio: true, video: true}`?
-5. What size is the video element?  How can you get the video's natural size from JavaScript? Use the Chrome Dev Tools to check. Use CSS to make the video full width. How would you ensure the video is no higher than the viewport?
-6. Try adding CSS filters to the video element (more ideas [here](http://html5-demos.appspot.com/static/css/filters/index.html)).
-7. Try changing constraints: see the sample at [simpl.info/getusermedia/constraints](https://simpl.info/getusermedia/constraints/).
-
-For example:
-
-    video {
-      filter: hue-rotate(180deg) saturate(200%);
-      -moz-filter: hue-rotate(180deg) saturate(200%);
-      -webkit-filter: hue-rotate(180deg) saturate(200%);
-    }
 
 ## Step 3: Stream video with RTCPeerConnection
 
@@ -142,7 +125,7 @@ This example sets up a connection between two peers on the same page. Not much u
         </div>
 
 3. Add the JavaScript from [complete/step3/index.html](https://bitbucket.org/webrtc/codelab/raw/master/complete/step3/index.html).
-1. Test it out [locally](http://localhost:2013) (see instructions above on running demos).
+4. Test it out [locally](http://localhost:2013) (see instructions above on running demos).
 
 ### Explanation
 
@@ -155,15 +138,6 @@ This code does a lot!
 [^SDP]: [Session Description Protocol](http://en.wikipedia.org/wiki/Session_Description_Protocol)
 [^ICE]: [Interactive Connectivity Establishment Protocol](http://en.wikipedia.org/wiki/Interactive_Connectivity_Establishment)
 
-### Bonus points
-
-1. Take a look at _chrome://webrtc-internals_. (There is a full list of Chrome URLs at _chrome://about_.)
-2. Style the page with CSS:
-    - Put the videos side by side.
-    - Make the buttons the same width, with bigger text.
-    - Make sure it works on mobile.
-3. From the Chrome Dev Tools console, inspect _localStream_, _localPeerConnection_ and _remotePeerConnection_.
-4. Take a look at _localPeerConnection.localDescription_. What does SDP format look like?
 
 ## Step 4: Stream arbitrary data with RTCDataChannel
 
@@ -218,12 +192,6 @@ Most of the code in this section is the same as for the RTCPeerConnection exampl
 The syntax of RTCDataChannel is deliberately similar to WebSocket, with a `send()` method and a `message` event.
 
 Notice the use of constraints.
-
-### Bonus points
-
-1. Try out RTCDataChannel file sharing with [Sharefest](http://www.sharefest.me/). When would RTCDataChannel need to provide reliable delivery of data, and when might performance be more important -- even if that means losing some data?
-2. Use CSS to improve page layout, and add a placeholder attribute to the _dataChannelReceive_ textarea.
-4. Test the page on a mobile device.
 
 ## Step 5: Set up a signaling server and exchange messages
 
@@ -287,17 +255,6 @@ Our simple WebRTC application will only permit a maximum of two peers to share a
 
 4. To see what's happening, check the Chrome DevTools console (Command-Option-J, or Ctrl-Shift-J).
 
-### Bonus points
-
-1. Try deploying your messaging server so you can access it via a public URL. (Free trials and easy deployment options for Node are available on several hosting sites including [nodejitsu](http://www.nodejitsu.com), [heroku](http://www.heroku.com) and [nodester](http://www.nodester.com).)
-
-2. What alternative messaging mechanisms are available? (Take a look at [apprtc.appspot.com](http://apprtc.appspot.com).) What problems might we encounter using 'pure' WebSocket? (Take a look at Arnout Kazemier's presentation, [WebSuckets](https://speakerdeck.com/3rdeden/websuckets).)
-
-3. What issues might be involved with scaling this application? Can you develop a method for testing thousands or millions of simultaneous room requests.
-
-4. Try out Remy Sharp's tool [nodemon](https://github.com/remy/nodemon). This monitors any changes in your Node.js application and automatically restarts the server when changes are saved.
-
-5. This app uses a JavaScript prompt to get a room name. Work out a way to get the room name from the URL, for example _localhost:2013/foo_ would give the room name _foo_.
 
 ## Step 6: RTCPeerConnection with messaging
 
@@ -330,96 +287,6 @@ In this step, we build a video chat client, using the signaling server we create
 5. How would users share the room name? Try to build an alternative to sharing room names.
 
 
-## Step 7: File sharing using RTCDataChannel
-
-Complete example: [complete/step7](https://bitbucket.org/webrtc/codelab/src/4dc79328c01d890e7b2476721c42fbd6a31f15bf/complete/stepx/?at=step-x).
-
-Step 5 showed how to exchange text messages using RTCDataChannel.
-
-This step makes it possible to share entire files: in this example, photos captured via `getUserMedia()`.
-
-The core parts of this step are as follows:
-
-1. Establish a data channel.  Note that we don't add any media streams to the peer connection in this step.
-
-2. Grab the user's webcam video stream with `getUserMedia()`:
-
-        var video = document.getElementById('video');
-        getUserMedia({video: true}, function(stream) {
-            video.src = window.URL.createObjectURL(stream);
-        }, getMediaErrorCallback);
-
-3. When the user clicks on the **Snap** button, get a snapshot (a video frame) from the video stream and display it:
-
-        var canvas = document.querySelector('canvas);
-        var context = photo.getContext('2d');
-        context.drawImage(video, 0, 0, canvasWidth, canvasHeight);
-
-4. When the user clicks on the **Send** button, convert the image to bytes and send them over a data channel:
-
-        // Split data channel message in chunks
-        var CHUNK_LEN = 64000;
-        // Get the image bytes and calculate the number of chunks
-        var img = canvas.getImageData(0, 0, canvasWidth, canvasHeight);
-        var len = img.data.byteLength;
-        var numChunks = len / CHUNK_LEN | 0;
-        // Let the other peer know in advance how many bytes to expect in total
-        dataChannel.send(len);
-        // Split the photo in chunks and send it over the data channel
-        for (var i = 0; i < n; i++) {
-            var start = i * CHUNK_LEN;
-            var end = (i+1) * CHUNK_LEN;
-            dataChannel.send(img.data.subarray(start, end));
-        }
-        // Send the reminder, if any
-        if (len % CHUNK_LEN) {
-            dataChannel.send(img.data.subarray(n * CHUNK_LEN));
-        }
-
-5. The receiving side converts data channel message bytes back to an image and displays this to the user:
-
-        var buf, count;
-        // dc is an RTCDataChannel initialized somewhere else
-        dc.onmessage = function(event) {
-          if (typeof event.data === 'string') {
-              buf = new Uint8ClampedArray(parseInt(event.data));
-              count = 0;
-              console.log('Expecting a total of ' + buf.byteLength + ' bytes');
-              return;
-          }
-          var data = new Uint8ClampedArray(event.data);
-          buf.set(data, count);
-          count += data.byteLength;
-          if (count == buf.byteLength) {
-              // we're done: all data chunks have been received
-              renderPhoto(buf);
-          }
-        }
-        function renderPhoto(data) {
-            var photo = document.createElement('canvas');
-            trail.insertBefore(photo, trail.firstChild);
-            var canvas = photo.getContext('2d');
-            var img = canvas.createImageData(300, 150);
-            img.data.set(data);
-            canvas.putImageData(img, 0, 0);
-        }
-
-
-### Playing with the sample code
-
-1. As in previous steps, start a local server with `node server.js` and navigate to http://localhost:2013.
-2. Allow the app to use your camera.
-3. The app will create a random room. Copy and paste the URL into a new window.
-4. Click the 'Snap & send' button and see what happens in the other window.
-
-### Bonus points
-
-1. Try combinations of different browsers, e.g. Firefox or Opera.
-2. Send the room URL to another person in your codelab. You should be able to connect via WiFi.
-3. Deploy the app to a public URL and try 'snap & sending' photos with your friends.
-4. How can you change the code to make it possible to share any file type with your peers?
-
-
 ## Step 8: Use a WebRTC library: SimpleWebRTC
 
 Complete example: [complete/step8](https://bitbucket.org/webrtc/codelab/src/master/complete/step8).
@@ -428,26 +295,4 @@ Abstraction libraries such as SimpleWebRTC make it simple to create WebRTC appli
 
 1. Create a new document using the code from [complete/step8/index.html](https://bitbucket.org/webrtc/codelab/src/master/complete/step8/index.html).
 2. Open the document in multiple windows or tab.
-
-### Bonus points
-
-1. Find a WebRTC library for RTCDataChannel. (Hint: there's one named PeerJS!)
-2. Set up your own signaling server using the SimpleWebRTC server [signalmaster](https://github.com/andyet/signalmaster).
-
-## Step 9: Support three or more users in the same room
-
-This is a DIY step!
-
-How would you implement an app combining video chat and file exchange for three or more users?
-
-How many users can an app sustain in full mesh mode, i.e. with a peer connection between every user?
-
-What are the alternatives? (Take a look at the HTML5 Rocks [WebRTC infrastructure article](http://www.html5rocks.com/en/tutorials/webrtc/infrastructure/#beyond-one-to-one-multi-party-webrtc) for inspiration.)
-
-
-### Bonus points
-
-1. So far, the app hasn't had any work done on layout. Sort it out! Make sure your app works well across different devices.
-
-
 
